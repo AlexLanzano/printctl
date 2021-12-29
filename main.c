@@ -1,12 +1,25 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
-#include <command.h>
+#include <printer.h>
 
 #define INPUT_LENGTH 256
+#define COMMAND_STRING_MAX 32
+#define COMMAND_COUNT 5
 
-extern char g_command[COMMAND_COUNT][COMMAND_STRING_MAX];
+typedef enum command {
+    COMMAND_INVALID,
+    COMMAND_QUIT,
+    COMMAND_STATUS,
+    COMMAND_CONNECT,
+    COMMAND_LOAD,
+    COMMAND_PRINT,
+} command_t;
+
+static const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"quit"},{"status"}, {"connect"}, {"load"},
+                                                                  {"print"}};
 
 static command_t parse_command(char *command)
 {
@@ -20,22 +33,67 @@ static command_t parse_command(char *command)
     return COMMAND_INVALID;
 }
 
-static char *get_command_args(char *input, char *command)
+static error_t process_connect_command()
 {
-    if (!input || !command) {
-        return NULL;
+    char *token;
+    char serial_device[256] = {0};
+    int baud;
+
+    token = strtok(NULL, " ");
+    if (!token) {
+        errno = EINVAL;
+        print_error("No serial device provided.");
+        return ERROR;
+    }
+    strncpy(serial_device, token, 255);
+
+    token = strtok(NULL, " ");
+    if (!token) {
+        errno = EINVAL;
+        print_error("No baud rate provided.");
+        return ERROR;
     }
 
-    size_t input_length = strlen(input);
-    size_t command_length = strlen(command);
-
-    if (input_length == command_length ||
-        input_length > command_length+1) {
-        return NULL;
+    baud = atoi(token);
+    if (baud == 0) {
+        errno = EINVAL;
+        print_error("Invalid baud rate provided.");
+        return ERROR;
     }
 
-    return &input[command_length+1];
+    return printer_connect(serial_device, baud);
+}
 
+static error_t process_load_command()
+{
+    char *token;
+    char filename[256] = {0};
+
+    token = strtok(NULL, " ");
+    if (!token) {
+        errno = EINVAL;
+        print_error("Please specify a file to load.");
+        return ERROR;
+    }
+    strncpy(filename, token, 255);
+
+    return printer_load(filename);
+}
+
+static error_t process_print_command()
+{
+    char *token;
+    char filename[256] = {0};
+
+    token = strtok(NULL, " ");
+    if (!token) {
+        errno = EINVAL;
+        print_error("Please specify a file to print.");
+        return ERROR;
+    }
+    strncpy(filename, token, 255);
+
+    return printer_print(filename);
 }
 
 static error_t process_input(char *input)
@@ -46,7 +104,7 @@ static error_t process_input(char *input)
 
     error_t error;
     char *command = strtok(input, " ");
-    char *command_args = get_command_args(input, command);
+    //char *command_args = get_command_args(input, command);
 
     switch (parse_command(command)) {
     case COMMAND_INVALID:
@@ -54,23 +112,23 @@ static error_t process_input(char *input)
         break;
 
     case COMMAND_QUIT:
-        command_exit();
+        exit(0);
         break;
 
     case COMMAND_STATUS:
-        error = command_status();
+        error = printer_status();
         break;
 
     case COMMAND_CONNECT:
-        error = command_connect(command_args);
+        error = process_connect_command();
         break;
 
     case COMMAND_LOAD:
-        error = command_load(command_args);
+        error = process_load_command();
         break;
 
     case COMMAND_PRINT:
-        error = command_print(command_args);
+        error = process_print_command();
         break;
     }
 
@@ -106,6 +164,5 @@ int32_t main(int32_t argc, char **argv)
         // Process the input
         process_input(input);
     }
-
     return 0;
 }

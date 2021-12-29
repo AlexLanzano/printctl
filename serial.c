@@ -8,7 +8,7 @@
 #include <error.h>
 #include <termios.h>
 
-error_t serial_init(char *serial_device_path, uint64_t baud, int *serial_fd)
+error_t serial_init(const char *serial_device_path, const uint64_t baud, int *serial_fd)
 {
     if (!serial_device_path || !serial_fd) {
         errno = EINVAL;

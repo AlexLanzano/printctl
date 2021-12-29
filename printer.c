@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <command.h>
+#include <printer.h>
 #include <serial.h>
 #include <error.h>
 #include <gcode.h>
@@ -12,15 +12,28 @@
 
 static int g_serial_fd;
 static bool g_is_connected = false;
-const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"quit"},{"status"}, {"connect"}, {"load"},
-                                                           {"print"}};
 
-void command_exit()
+error_t printer_connect(const char *serial_device, const uint64_t baud)
 {
-    exit(0);
+    error_t error;
+
+    if (!serial_device) {
+        errno = EINVAL;
+        print_error("No serial device provided.");
+        return ERROR;
+    }
+
+    error = serial_init(serial_device, baud, &g_serial_fd);
+    if (error) {
+        print_error("Unable to connect to the serial device.");
+        return ERROR;
+    }
+
+    g_is_connected = true;
+    return SUCCESS;
 }
 
-error_t command_status()
+error_t printer_status()
 {
     error_t error;
 
@@ -37,45 +50,7 @@ error_t command_status()
     return SUCCESS;;
 }
 
-error_t command_connect(char *command_args)
-{
-    error_t error;
-    char serial_device[256] = {0};
-    uint64_t baud;
-
-    char *token = strtok(command_args, " ");
-    if (!token) {
-        errno = EINVAL;
-        print_error("No serial device provided.");
-        return ERROR;
-    }
-    strncpy(serial_device, token, 255);
-
-    token = strtok(NULL, " ");
-    if (!token) {
-        errno = EINVAL;
-        print_error("No baud rate provided.");
-        return ERROR;
-    }
-
-    baud = atoi(token);
-    if (baud == 0) {
-        errno = EINVAL;
-        print_error("Invalid baud rate provided.");
-        return ERROR;
-    }
-
-    error = serial_init(serial_device, baud, &g_serial_fd);
-    if (error) {
-        print_error("Unable to connect to the serial device.");
-        return ERROR;
-    }
-
-    g_is_connected = true;
-    return SUCCESS;
-}
-
-error_t command_load(char *command_args)
+error_t printer_load(const char *filename)
 {
     if (!g_is_connected) {
         errno = ECOMM;
@@ -84,7 +59,6 @@ error_t command_load(char *command_args)
     }
 
     error_t error;
-    char *filename = strtok(command_args, " ");
     if (!filename) {
         errno = EINVAL;
         print_error("Please specify a file to load.");
@@ -120,7 +94,7 @@ error_t command_load(char *command_args)
     return error;
 }
 
-error_t command_print(char *command_args)
+error_t printer_print(const char *filename)
 {
     if (!g_is_connected) {
         errno = ECOMM;
@@ -128,13 +102,13 @@ error_t command_print(char *command_args)
         return ERROR;
     }
 
-    error_t error;
-    char *filename = strtok(command_args, " ");
     if (!filename) {
         errno = EINVAL;
         print_error("Please provide a filename to print.");
         return ERROR;
     }
+
+    error_t error;
 
     // Set the file that will be printed from the SD card
     error = gcode_send(g_serial_fd, "M23 %s", filename);
