@@ -135,34 +135,63 @@ static error_t process_input(char *input)
     return error;
 }
 
+error_t run_script(int32_t argc, char **argv)
+{
+    error_t error;
+    char input[INPUT_LENGTH] = {0};
+    size_t line_count = 0;
+
+    FILE *script = fopen(argv[1], "r");
+    if (!script) {
+        print_error("Failed to open script.");
+        return ERROR;
+    }
+
+    while (fgets(input, INPUT_LENGTH, script)) {
+        input[strlen(input)-1] = 0;
+        error = process_input(input);
+        if (error) {
+            printf("Failed to execute command on line %li.\n", line_count);
+            return ERROR;
+        }
+        line_count++;
+    }
+
+    return SUCCESS;
+}
+
 int32_t main(int32_t argc, char **argv)
 {
     char input[INPUT_LENGTH] = {0};
 
-    while (1) {
-        printf("> ");
-        fgets(input, INPUT_LENGTH, stdin);
+    if (argc > 1) {
+        run_script(argc, argv);
+    } else {
+        while (1) {
+            printf("> ");
+            fgets(input, INPUT_LENGTH, stdin);
 
-        // Don't do anything if the user enters an empty input
-        if (input[0] == '\n') {
-            continue;
-        }
-
-        // Check if the input is too big
-        if (input[strlen(input)-1] != '\n') {
-            printf("Invalid input!\n");
-            // Clear out the remaining characters on the input stream
-            while (input[strlen(input)-1] != '\n') {
-                fgets(input, INPUT_LENGTH, stdin);
+            // Don't do anything if the user enters an empty input
+            if (input[0] == '\n') {
+                continue;
             }
-            continue;
+
+            // Check if the input is too big
+            if (input[strlen(input)-1] != '\n') {
+                printf("Invalid input!\n");
+                // Clear out the remaining characters on the input stream
+                while (input[strlen(input)-1] != '\n') {
+                    fgets(input, INPUT_LENGTH, stdin);
+                }
+                continue;
+            }
+
+            // Clear the newline character at the end of the input
+            input[strlen(input)-1] = 0;
+
+            // Process the input
+            process_input(input);
         }
-
-        // Clear the newline character at the end of the input
-        input[strlen(input)-1] = 0;
-
-        // Process the input
-        process_input(input);
+        return 0;
     }
-    return 0;
 }
