@@ -85,9 +85,8 @@ static uint32_t process_input(char *input, command_result_t *result)
 int32_t main(int32_t argc, char **argv)
 {
     char input[INPUT_LENGTH] = {0};
-    bool is_running = true;
 
-    while (is_running) {
+    while (1) {
         command_result_t command_result = {0};
 
         printf("> ");

@@ -75,25 +75,29 @@ void command_load(char *command_args, command_result_t *result)
     }
 
     char *filename = strtok(command_args, " ");
-    char code[512] = {0};
-    char line[MAX_LINE_LENGTH] = {0};
+    if (!filename) {
+        strncpy(result->message, "Please specify a file to load.", COMMAND_RESULT_MESSAGE_MAX-1);
+    }
 
-    FILE *file = fopen(filename, "rb");
+    FILE *file = fopen(filename, "r");
     if (!file) {
         strncpy(result->message, "Unable to open file.", COMMAND_RESULT_MESSAGE_MAX-1);
         return;
     }
 
     // Send g code to start writing to the a file on the SD card
+    char code[512] = {0};
     strncpy(code, "M28 ", 511);
     strncat(code, filename, 507);
     write(g_serial_fd, code, strlen(code));
 
     // Write file data to the SD card
+    char line[MAX_LINE_LENGTH] = {0};
     while (fgets(line, MAX_LINE_LENGTH, file)) {
         printf("%s", line);
         write(g_serial_fd, line, strlen(line));
     }
+    fclose(file);
 
     // Send g code to stop writing to the a file on the SD card
     strncpy(code, "M29 ", 511);
