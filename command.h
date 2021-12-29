@@ -16,16 +16,10 @@ typedef enum command {
     COMMAND_PRINT,
 } command_t;
 
-typedef struct command_result {
-    command_t command;
-    error_t error;
-    char message[COMMAND_RESULT_MESSAGE_MAX];
-} command_result_t;
-
 void command_exit();
-void command_status(command_result_t *result);
-void command_connect(char *command_args, command_result_t *result);
-void command_load(char *command_args, command_result_t *result);
-void command_print(char *command_args, command_result_t *result);
+error_t command_status();
+error_t command_connect(char *command_args);
+error_t command_load(char *command_args);
+error_t command_print(char *command_args);
 
 #endif

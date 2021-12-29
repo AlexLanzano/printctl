@@ -1,21 +1,13 @@
 #ifndef ERROR_H
 #define ERROR_H
 
+#include <errno.h>
+
 typedef enum {
     SUCCESS,
-    ERROR_INVALID,
-    ERROR_NO_MEMORY,
-    ERROR_IO,
-    ERROR_TIMEOUT,
-    ERROR_FAULT,
-    ERROR_LOCKED,
+    ERROR
 } error_t;
 
-struct error_message {
-    error_t error_id;
-    const char *message;
-};
-
-const char *error_get_message(error_t error);
+void print_error(const char *msg);
 
 #endif

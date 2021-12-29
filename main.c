@@ -38,48 +38,43 @@ static char *get_command_args(char *input, char *command)
 
 }
 
-static uint32_t process_input(char *input, command_result_t *result)
+static error_t process_input(char *input)
 {
-    if (!input || !result) {
-        return 1;
+    if (!input) {
+        return ERROR;
     }
 
+    error_t error;
     char *command = strtok(input, " ");
     char *command_args = get_command_args(input, command);
 
     switch (parse_command(command)) {
     case COMMAND_INVALID:
-        result->command = COMMAND_INVALID;
-        strncpy(result->message, "Invalid command.", COMMAND_RESULT_MESSAGE_MAX-1);
+        print_error("Invalid command.");
         break;
 
     case COMMAND_QUIT:
-        result->command = COMMAND_QUIT;
         command_exit();
         break;
 
     case COMMAND_STATUS:
-        result->command = COMMAND_STATUS;
-        command_status(result);
+        error = command_status();
         break;
 
     case COMMAND_CONNECT:
-        result->command = COMMAND_CONNECT;
-        command_connect(command_args, result);
+        error = command_connect(command_args);
         break;
 
     case COMMAND_LOAD:
-        result->command = COMMAND_LOAD;
-        command_load(command_args, result);
+        error = command_load(command_args);
         break;
 
     case COMMAND_PRINT:
-        result->command = COMMAND_PRINT;
-        command_print(command_args, result);
+        error = command_print(command_args);
         break;
     }
 
-    return 0;
+    return error;
 }
 
 int32_t main(int32_t argc, char **argv)
@@ -87,8 +82,6 @@ int32_t main(int32_t argc, char **argv)
     char input[INPUT_LENGTH] = {0};
 
     while (1) {
-        command_result_t command_result = {0};
-
         printf("> ");
         fgets(input, INPUT_LENGTH, stdin);
 
@@ -111,12 +104,7 @@ int32_t main(int32_t argc, char **argv)
         input[strlen(input)-1] = 0;
 
         // Process the input
-        process_input(input, &command_result);
-
-        // Print result message if there is one
-        if (strlen(command_result.message) > 0) {
-            printf("%s\n", command_result.message);
-        }
+        process_input(input);
     }
 
     return 0;

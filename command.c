@@ -3,10 +3,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <command.h>
 #include <serial.h>
 #include <error.h>
+#include <gcode.h>
 
 #define MAX_LINE_LENGTH 1024
 
@@ -20,18 +20,24 @@ void command_exit()
     exit(0);
 }
 
-void command_status(command_result_t *result)
+error_t command_status()
 {
+    error_t error;
+
     if (!g_is_connected) {
-        strncpy(result->message, "Please connect to a serial device.", COMMAND_RESULT_MESSAGE_MAX-1);
-        return;
+        print_error("Please connect to a serial device.");
+        return ERROR;
     }
 
-    write(g_serial_fd, "M27", 3);
-    return;
+    error = gcode_send(g_serial_fd, "M27");
+    if (error) {
+        print_error("Failed to send status code.");
+        return error;
+    }
+    return SUCCESS;;
 }
 
-void command_connect(char *command_args, command_result_t *result)
+error_t command_connect(char *command_args)
 {
     error_t error;
     char serial_device[256] = {0};
@@ -39,87 +45,109 @@ void command_connect(char *command_args, command_result_t *result)
 
     char *token = strtok(command_args, " ");
     if (!token) {
-        result->error = ERROR_INVALID;
-        strncpy(result->message, "No serial device provided.", COMMAND_RESULT_MESSAGE_MAX-1);
-        return;
+        errno = EINVAL;
+        print_error("No serial device provided.");
+        return ERROR;
     }
     strncpy(serial_device, token, 255);
 
     token = strtok(NULL, " ");
     if (!token) {
-        result->error = ERROR_INVALID;
-        strncpy(result->message, "No baud rate provided.", COMMAND_RESULT_MESSAGE_MAX-1);
-        return;
+        errno = EINVAL;
+        print_error("No baud rate provided.");
+        return ERROR;
     }
 
     baud = atoi(token);
     if (baud == 0) {
-        strncpy(result->message, "Invalid baud rate provided.", COMMAND_RESULT_MESSAGE_MAX-1);
-        return;
+        errno = EINVAL;
+        print_error("Invalid baud rate provided.");
+        return ERROR;
     }
 
     error = serial_init(serial_device, baud, &g_serial_fd);
-    if (error != SUCCESS) {
-        strncpy(result->message, "Unable to connect to the serial device.", COMMAND_RESULT_MESSAGE_MAX-1);
-        g_is_connected = false;
-    } else {
-        g_is_connected = true;
+    if (error) {
+        print_error("Unable to connect to the serial device.");
+        return ERROR;
     }
+
+    g_is_connected = true;
+    return SUCCESS;
 }
 
-void command_load(char *command_args, command_result_t *result)
+error_t command_load(char *command_args)
 {
     if (!g_is_connected) {
-        strncpy(result->message, "Please connect to a serial device.", COMMAND_RESULT_MESSAGE_MAX-1);
-        return;
+        errno = ECOMM;
+        print_error("Please connect to a serial device.");
+        return ERROR;
     }
 
+    error_t error;
     char *filename = strtok(command_args, " ");
     if (!filename) {
-        strncpy(result->message, "Please specify a file to load.", COMMAND_RESULT_MESSAGE_MAX-1);
+        errno = EINVAL;
+        print_error("Please specify a file to load.");
+        return ERROR;
     }
 
     FILE *file = fopen(filename, "r");
     if (!file) {
-        strncpy(result->message, "Unable to open file.", COMMAND_RESULT_MESSAGE_MAX-1);
-        return;
+        print_error("Unable to open file.");
+        return ERROR;
     }
 
-    // Send g code to start writing to the a file on the SD card
-    char code[512] = {0};
-    strncpy(code, "M28 ", 511);
-    strncat(code, filename, 507);
-    write(g_serial_fd, code, strlen(code));
+    // Send gcode to start writing to the a file on the SD card
+    error = gcode_send(g_serial_fd, "M28 %s", filename);
+    if (error) {
+        print_error("Unable to send gcode M28.");
+        return ERROR;
+    }
 
     // Write file data to the SD card
     char line[MAX_LINE_LENGTH] = {0};
     while (fgets(line, MAX_LINE_LENGTH, file)) {
-        printf("%s", line);
-        write(g_serial_fd, line, strlen(line));
+       serial_write(g_serial_fd, line);
     }
     fclose(file);
 
-    // Send g code to stop writing to the a file on the SD card
-    strncpy(code, "M29 ", 511);
-    strncat(code, filename, 507);
-    write(g_serial_fd, code, strlen(code));
-}
-
-void command_print(char *command_args, command_result_t *result)
-{
-    if (!g_is_connected) {
-        strncpy(result->message, "Please connect to a serial device.", COMMAND_RESULT_MESSAGE_MAX-1);
-        return;
+    // Send gcode to stop writing to the a file on the SD card
+    error = gcode_send(g_serial_fd, "M29 %s", filename);
+    if (error) {
+        print_error("Unable to send gcode M29.");
     }
 
-    char code[512] = {0};
+    return error;
+}
+
+error_t command_print(char *command_args)
+{
+    if (!g_is_connected) {
+        errno = ECOMM;
+        print_error("Please connect to a serial device.");
+        return ERROR;
+    }
+
+    error_t error;
     char *filename = strtok(command_args, " ");
+    if (!filename) {
+        errno = EINVAL;
+        print_error("Please provide a filename to print.");
+        return ERROR;
+    }
 
     // Set the file that will be printed from the SD card
-    strncpy(code, "M23 ", 511);
-    strncat(code, filename, 507);
-    write(g_serial_fd, code, strlen(code));
+    error = gcode_send(g_serial_fd, "M23 %s", filename);
+    if (error) {
+        print_error("Failed to set the file to print.");
+        return ERROR;
+    }
 
     // Start the print
-    write(g_serial_fd, "M24", 3);
+    error = gcode_send(g_serial_fd, "M24");
+    if (error) {
+        print_error("Failed to start the print.");
+    }
+
+    return error;
 }
