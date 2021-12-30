@@ -33,6 +33,25 @@ error_t printer_connect(const char *serial_device, const uint64_t baud)
     return SUCCESS;
 }
 
+error_t printer_disconnect()
+{
+    if (!g_is_connected) {
+        return SUCCESS;
+    }
+
+    error_t error;
+
+    error = serial_deinit(g_serial_fd);
+    if (error) {
+        print_error("Unable to disconnect from serial device.");
+        return error;
+    }
+
+    g_is_connected = false;
+
+    return SUCCESS;
+}
+
 error_t printer_status()
 {
     error_t error;

@@ -7,19 +7,20 @@
 
 #define INPUT_LENGTH 256
 #define COMMAND_STRING_MAX 32
-#define COMMAND_COUNT 5
+#define COMMAND_COUNT 6
 
 typedef enum command {
     COMMAND_INVALID,
     COMMAND_QUIT,
-    COMMAND_STATUS,
     COMMAND_CONNECT,
+    COMMAND_DISCONNECT,
+    COMMAND_STATUS,
     COMMAND_LOAD,
     COMMAND_PRINT,
 } command_t;
 
-static const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"quit"},{"status"}, {"connect"}, {"load"},
-                                                                  {"print"}};
+static const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"quit"}, {"connect"}, {"disconnect"}, {"status"},
+                                                                  {"load"}, {"print"}};
 
 static command_t parse_command(char *command)
 {
@@ -115,12 +116,16 @@ static error_t process_input(char *input)
         exit(0);
         break;
 
-    case COMMAND_STATUS:
-        error = printer_status();
-        break;
-
     case COMMAND_CONNECT:
         error = process_connect_command();
+        break;
+
+    case COMMAND_DISCONNECT:
+        error = printer_disconnect();
+        break;
+
+    case COMMAND_STATUS:
+        error = printer_status();
         break;
 
     case COMMAND_LOAD:

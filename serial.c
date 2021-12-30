@@ -54,6 +54,15 @@ error_t serial_init(const char *serial_device_path, const uint64_t baud, int *se
     return SUCCESS;
 }
 
+error_t serial_deinit(const int serial_fd)
+{
+    if (close(serial_fd)) {
+        return ERROR;
+    }
+
+    return SUCCESS;
+}
+
 error_t serial_read(const int serial_fd, char *buffer, const size_t buffer_size)
 {
     return SUCCESS;
