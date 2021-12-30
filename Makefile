@@ -21,6 +21,9 @@ all: $(BINARY)
 $(BINARY): $(OBJECTS)
 	gcc $(CFLAGS) -o $@ $^
 
+install: $(BINARY)
+	install -m 755 $(BINARY) /usr/bin
+
 .PHONY: clean
 clean:
 	rm -rf $(DEPDIR) $(OBJECTS) $(BINARY)
