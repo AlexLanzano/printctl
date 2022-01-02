@@ -15,12 +15,12 @@ typedef enum command {
     COMMAND_CONNECT,
     COMMAND_DISCONNECT,
     COMMAND_STATUS,
-    COMMAND_LOAD,
     COMMAND_PRINT,
+    COMMAND_SEND,
 } command_t;
 
 static const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"quit"}, {"connect"}, {"disconnect"}, {"status"},
-                                                                  {"load"}, {"print"}};
+                                                                  {"print"}, {"send"}};
 
 static command_t parse_command(char *command)
 {
@@ -65,22 +65,6 @@ static error_t process_connect_command()
     return printer_connect(serial_device, baud);
 }
 
-static error_t process_load_command()
-{
-    char *token;
-    char filename[256] = {0};
-
-    token = strtok(NULL, " ");
-    if (!token) {
-        errno = EINVAL;
-        print_error("Please specify a file to load.");
-        return ERROR;
-    }
-    strncpy(filename, token, 255);
-
-    return printer_load(filename);
-}
-
 static error_t process_print_command()
 {
     char *token;
@@ -97,15 +81,32 @@ static error_t process_print_command()
     return printer_print(filename);
 }
 
+/* static error_t process_send_command() */
+/* { */
+/*     char *token; */
+/*     char gcode[512] = {0}; */
+
+/*     token = strtok(NULL, " "); */
+/*     while (token) { */
+/*         char arg[256]; */
+/*         snprintf(arg, 256, "%s ") */
+/*         token = strtok(NULL, " "); */
+/*     } */
+
+/*     if (strlen(gcode) == 0) { */
+/*         return ERROR; */
+/*     } */
+
+/*     return printer_send(gcode); */
+/* } */
+
 static error_t process_input(char *input)
 {
     if (!input) {
         return ERROR;
     }
-
     error_t error;
     char *command = strtok(input, " ");
-    //char *command_args = get_command_args(input, command);
 
     switch (parse_command(command)) {
     case COMMAND_INVALID:
@@ -113,6 +114,7 @@ static error_t process_input(char *input)
         break;
 
     case COMMAND_QUIT:
+        printer_disconnect();
         exit(0);
         break;
 
@@ -128,15 +130,15 @@ static error_t process_input(char *input)
         error = printer_status();
         break;
 
-    case COMMAND_LOAD:
-        error = process_load_command();
-        break;
-
     case COMMAND_PRINT:
         error = process_print_command();
         break;
-    }
 
+    case COMMAND_SEND:
+        error = printer_send(&input[5]);
+        break;
+
+    }
     return error;
 }
 
@@ -153,7 +155,9 @@ error_t run_script(int32_t argc, char **argv)
     }
 
     while (fgets(input, INPUT_LENGTH, script)) {
-        input[strlen(input)-1] = 0;
+        if (input[strlen(input)-1] == '\n') {
+            input[strlen(input)-1] = 0;
+        }
         error = process_input(input);
         if (error) {
             printf("Failed to execute command on line %li.\n", line_count);
