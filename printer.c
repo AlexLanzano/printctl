@@ -16,6 +16,8 @@ static bool g_is_connected = false;
 error_t printer_connect(const char *serial_device, const uint64_t baud)
 {
     error_t error;
+    bool ok = false;
+    char response[1024] = {0};
 
     if (!serial_device) {
         errno = EINVAL;
@@ -29,6 +31,14 @@ error_t printer_connect(const char *serial_device, const uint64_t baud)
         return ERROR;
     }
 
+    do {
+        error = gcode_get_response(g_serial_fd, response, 1024, &ok);
+        if (error) {
+            return ERROR;
+        }
+
+        printf("%s", response);
+    } while(strncmp(response, "LCD status changed\n", 1024) != 0);
 
     g_is_connected = true;
     return SUCCESS;

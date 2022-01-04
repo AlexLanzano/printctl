@@ -52,7 +52,7 @@ static bool gcode_ok(char *response)
     return false;
 }
 
-static error_t gcode_get_response(const int serial_fd, char *response, size_t response_length, bool *ok)
+error_t gcode_get_response(const int serial_fd, char *response, size_t response_length, bool *ok)
 {
     if (!response || !ok || !response_length) {
         return ERROR;
