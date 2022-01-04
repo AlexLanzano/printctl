@@ -103,7 +103,7 @@ error_t printer_print(const char *filename)
         return ERROR;
     }
 
-    // Write file data to the SD card
+    // Send file data
     error = gcode_send_file(g_serial_fd, file);
     fclose(file);
     if (error) {

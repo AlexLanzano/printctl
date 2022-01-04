@@ -100,7 +100,6 @@ error_t gcode_send(const int serial_fd, const char *format, ...)
         gcode[gcode_length+1] = 0;
     }
 
-    printf("SENDING %s", gcode);
     error = serial_write(serial_fd, gcode);
     if (error) {
         return ERROR;
@@ -112,8 +111,9 @@ error_t gcode_send(const int serial_fd, const char *format, ...)
             printf("ERROR\n");
             return ERROR;
         }
-
-        printf("%s", response);
+        if (!ok) {
+            printf("%s", response);
+        }
     } while (!ok);
     return error;
 }
