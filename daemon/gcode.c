@@ -1,17 +1,17 @@
 #include <stdarg.h>
-#include <error.h>
-#include <serial.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <daemon/serial.h>
+#include <common/error.h>
 
 #define MAX_GCODE_LENGTH 512
 
 static error_t gcode_clean(char *gcode)
 {
     if (!gcode) {
-        return ERROR;
+        return EINVAL;
     }
 
     // Skip comments
@@ -55,7 +55,7 @@ static bool gcode_ok(char *response)
 error_t gcode_get_response(const int serial_fd, char *response, size_t response_length, bool *ok)
 {
     if (!response || !ok || !response_length) {
-        return ERROR;
+        return EINVAL;
     }
 
     error_t error;
@@ -63,7 +63,7 @@ error_t gcode_get_response(const int serial_fd, char *response, size_t response_
 
     error = serial_readline(serial_fd, response, response_length, &bytes_read);
     if (error) {
-        return ERROR;
+        return error;
     }
 
     *ok = gcode_ok(response);
@@ -74,8 +74,7 @@ error_t gcode_get_response(const int serial_fd, char *response, size_t response_
 error_t gcode_send(const int serial_fd, const char *format, ...)
 {
     if (!format) {
-        errno = EINVAL;
-        return ERROR;
+        return EINVAL;
     }
 
     error_t error;
@@ -94,7 +93,7 @@ error_t gcode_send(const int serial_fd, const char *format, ...)
     gcode_length = strlen(gcode);
     if (gcode[gcode_length-1] != '\n') {
         if (gcode_length+2 >= MAX_GCODE_LENGTH) {
-            return ERROR;
+            return EINVAL;
         }
         gcode[gcode_length] = '\n';
         gcode[gcode_length+1] = 0;
@@ -102,14 +101,13 @@ error_t gcode_send(const int serial_fd, const char *format, ...)
 
     error = serial_write(serial_fd, gcode);
     if (error) {
-        return ERROR;
+        return error;
     }
 
     do {
         error = gcode_get_response(serial_fd, response, 1024, &ok);
         if (error) {
-            printf("ERROR\n");
-            return ERROR;
+            return error;
         }
         if (!ok) {
             printf("%s", response);
@@ -121,8 +119,7 @@ error_t gcode_send(const int serial_fd, const char *format, ...)
 error_t gcode_send_file(const int serial_fd, FILE *file)
 {
     if (!file) {
-        errno = EINVAL;
-        return ERROR;
+        return EINVAL;
     }
 
     error_t error;

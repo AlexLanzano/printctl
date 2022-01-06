@@ -1,7 +1,7 @@
 #ifndef PRINTER_H
 #define PRINTER_H
 
-#include <error.h>
+#include <common/error.h>
 
 error_t printer_connect(const char *serial_device, const uint64_t baud);
 error_t printer_disconnect();

@@ -5,12 +5,22 @@ CFLAGS = -Wall -Werror $(INCLUDE) $(LIBRARIES) -g3 \
 
 DEPDIR = .deps/
 
-SOURCE ?= $(wildcard *.c)
-OBJECTS = $(patsubst %.c,%.o,$(SOURCE))
-DEPENDS = $(patsubst %.c,$(DEPDIR)/%.d,$(SOURCE))
-BINARY = printctl
+COMMON_SOURCE ?= $(wildcard common/*.c)
+COMMON_OBJECTS = $(patsubst %.c,%.o,$(COMMON_SOURCE))
 
-all: $(BINARY)
+CLIENT_SOURCE ?= $(wildcard client/*.c)
+CLIENT_OBJECTS = $(patsubst %.c,%.o,$(CLIENT_SOURCE)) $(COMMON_OBJECTS)
+CLIENT_BINARY = printctl
+
+DAEMON_SOURCE ?= $(wildcard daemon/*.c)
+DAEMON_OBJECTS = $(patsubst %.c,%.o,$(DAEMON_SOURCE)) $(COMMON_OBJECTS)
+DAEMON_BINARY = printctld
+
+DEPENDS = $(patsubst %.c,$(DEPDIR)/%.d,$(CLIENT_SOURCE)) \
+          $(patsubst %.c,$(DEPDIR)/%.d,$(DAEMON_SOURCE)) \
+          $(patsubst %.c,$(DEPDIR)/%.d,$(COMMON_SOURCE))
+
+all: $(CLIENT_BINARY) $(DAEMON_BINARY)
 
 %.d:
 	@mkdir -p $(@D)
@@ -18,14 +28,19 @@ all: $(BINARY)
 %.o: %.c Makefile
 	gcc $(CFLAGS) -c -o $@ $<
 
-$(BINARY): $(OBJECTS)
+$(CLIENT_BINARY): $(CLIENT_OBJECTS)
 	gcc $(CFLAGS) -o $@ $^
 
-install: $(BINARY)
-	install -m 755 $(BINARY) /usr/bin
+$(DAEMON_BINARY): $(DAEMON_OBJECTS)
+	gcc $(CFLAGS) -o $@ $^
+
+install: $(CLIENT_BINARY) $(DAEMON_BINARY)
+	install -m 755 $(CLIENT_BINARY) /usr/bin
+	install -m 755 $(DAEMON_BINARY) /usr/bin
+	install -m 644 printctl@.service /usr/lib/systemd/system
 
 .PHONY: clean
 clean:
-	rm -rf $(DEPDIR) $(OBJECTS) $(BINARY)
+	rm -rf $(DEPDIR) $(CLIENT_OBJECTS) $(DAEMON_OBJECTS) $(CLIENT_BINARY) $(DAEMON_BINARY)
 
 include $(DEPENDS)

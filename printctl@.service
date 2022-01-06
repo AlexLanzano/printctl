@@ -1,0 +1,12 @@
+[Unit]
+Description=Daemon service for printctl profile %I
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/printctld %I
+KillSignal=SIGINT
+
+[Install]
+# Start the service before we get to multi-user mode
+WantedBy=multi-user.target

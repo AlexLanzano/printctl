@@ -2,8 +2,8 @@
 #define SERIAL_H
 
 #include <stdint.h>
-#include <error.h>
 #include <stddef.h>
+#include <common/error.h>
 
 error_t serial_init(const char *serial_device_path, const uint64_t baud, int *serial_fd);
 error_t serial_deinit();

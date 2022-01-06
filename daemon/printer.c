@@ -3,10 +3,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <printer.h>
-#include <serial.h>
-#include <error.h>
-#include <gcode.h>
+#include <daemon/printer.h>
+#include <daemon/serial.h>
+#include <daemon/gcode.h>
+#include <common/error.h>
 
 #define MAX_LINE_LENGTH 1024
 
@@ -20,21 +20,20 @@ error_t printer_connect(const char *serial_device, const uint64_t baud)
     char response[1024] = {0};
 
     if (!serial_device) {
-        errno = EINVAL;
         print_error("No serial device provided.");
-        return ERROR;
+        return EINVAL;
     }
 
     error = serial_init(serial_device, baud, &g_serial_fd);
     if (error) {
         print_error("Unable to connect to the serial device.");
-        return ERROR;
+        return error;
     }
 
     do {
         error = gcode_get_response(g_serial_fd, response, 1024, &ok);
         if (error) {
-            return ERROR;
+            return error;
         }
 
         printf("%s", response);
@@ -69,7 +68,7 @@ error_t printer_status()
 
     if (!g_is_connected) {
         print_error("Please connect to a serial device.");
-        return ERROR;
+        return EINVAL;
     }
 
     error = gcode_send(g_serial_fd, "M27\n");
@@ -86,21 +85,20 @@ error_t printer_print(const char *filename)
     if (!g_is_connected) {
         errno = ECOMM;
         print_error("Please connect to a serial device.");
-        return ERROR;
+        return EINVAL;
     }
 
     error_t error;
 
     if (!filename) {
-        errno = EINVAL;
         print_error("Please specify a file name.");
-        return ERROR;
+        return EINVAL;
     }
 
     FILE *file = fopen(filename, "r");
     if (!file) {
-            print_error("Unable to open file.");
-        return ERROR;
+        print_error("Unable to open file.");
+        return errno;
     }
 
     // Send file data
@@ -108,7 +106,7 @@ error_t printer_print(const char *filename)
     fclose(file);
     if (error) {
         print_error("Unable to send file to printer.");
-        return ERROR;
+        return EINVAL;
     }
 
     return SUCCESS;
@@ -117,9 +115,8 @@ error_t printer_print(const char *filename)
 error_t printer_send(const char *gcode)
 {
     if (!g_is_connected) {
-        errno = ECOMM;
         print_error("Please connect to a serial device.");
-        return ERROR;
+        return ECOMM;
     }
 
 
