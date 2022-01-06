@@ -38,6 +38,7 @@ install: $(CLIENT_BINARY) $(DAEMON_BINARY)
 	install -m 755 $(CLIENT_BINARY) /usr/bin
 	install -m 755 $(DAEMON_BINARY) /usr/bin
 	install -m 644 printctl@.service /usr/lib/systemd/system
+	mkdir -p /etc/printctl
 
 .PHONY: clean
 clean:
