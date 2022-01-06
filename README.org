@@ -1,0 +1,32 @@
+* printctl
+A command-line utility to send commands to a 3D printer
+
+** How to build
+#+BEGIN_SRC
+make
+make install
+#+END_SRC
+
+** Creating a profile for your printer
+In order to run the daemon you need to create a profile in the
+~/etc/printctl/~ directory. Here is an example of a profile:
+
+#+BEGIN_SRC
+device=/dev/ttyACM0
+baud=115200
+#+END_SRC
+
+The profile defines the way your computer is connected to the
+printer. In this case, the ~ttyACM0~ serial device is connected to the
+serial device with a baud rate of 115200
+
+** printctl commands
+~printctrl start [NAME OF PROFILE]~ - start the daemon for the specific profile
+
+~printctrl stop [NAME OF PROFILE]~ - stop the daemon for the specific profile
+
+~printctrl enable [NAME OF PROFILE]~ - enable the daemon to start on boot
+
+~printctrl disable [NAME OF PROFILE]~ - disable the daemon to start on boot
+
+~printctrl print [NAME OF PROFILE] [FILEPATH]~ - start a print
