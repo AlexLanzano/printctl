@@ -48,3 +48,13 @@ error_t client_print(const char *file_path)
 
     return socket_write(g_socket, msg, strnlen(msg, 1024));
 }
+
+error_t client_reconnect_printer()
+{
+    if (!g_is_connected) {
+        return EINVAL;
+    }
+
+    return socket_write(g_socket, "reconnect", 9);
+
+}

@@ -6,5 +6,6 @@
 error_t client_connect(const char *profile);
 error_t client_disconnect();
 error_t client_print(const char *file_path);
+error_t client_reconnect_printer();
 
 #endif

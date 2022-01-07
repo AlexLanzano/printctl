@@ -108,3 +108,22 @@ error_t daemon_write_msg_to_client(char *client_msg, size_t client_msg_length)
 
     return socket_write(g_client_socket, client_msg, client_msg_length);
 }
+
+error_t daemon_reconnect_printer(const profile_t profile)
+{
+    error_t error;
+
+    error = printer_disconnect();
+    if (error) {
+        print_error("Failed to disconnect printer.");
+        return error;
+    }
+
+    error = printer_connect(profile.serial_device, profile.baud);
+    if (error) {
+        print_error("Failed to connect to printer.");
+        return error;
+    }
+
+    return SUCCESS;
+}

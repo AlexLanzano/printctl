@@ -11,5 +11,6 @@ error_t daemon_wait_for_client_connection(void);
 error_t daemon_disconnect_client(void);
 error_t daemon_read_client_msg(char *client_msg, size_t client_msg_length);
 error_t daemon_write_msg_to_client(char *client_msg, size_t client_msg_length);
+error_t daemon_reconnect_printer(const profile_t profile);
 
 #endif

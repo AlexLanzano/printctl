@@ -11,14 +11,16 @@
 
 #define INPUT_LENGTH 256
 #define COMMAND_STRING_MAX 32
-#define COMMAND_COUNT 1
+#define COMMAND_COUNT 2
 
 typedef enum command {
     COMMAND_INVALID,
     COMMAND_PRINT,
+    COMMAND_RECONNECT,
 } command_t;
 
-static const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"print"}};
+static const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"print"}, {"reconnect"}};
+static profile_t g_profile = {0};
 
 static void print_help()
 {
@@ -74,6 +76,10 @@ static error_t process_client_msg(char *msg)
     case COMMAND_PRINT:
         error = process_print_command();
         break;
+
+    case COMMAND_RECONNECT:
+        error = daemon_reconnect_printer(g_profile);
+        break;
     }
 
     return error;
@@ -87,20 +93,19 @@ int32_t main(int32_t argc, char **argv)
     }
 
     error_t error;
-    profile_t profile;
 
     if (signal(SIGINT, interrupt_signal_handler) == SIG_ERR) {
         print_error("Unable to catch SIGINT signal.");
         return EINVAL;
     }
 
-    error = profile_init(argv[1], &profile);
+    error = profile_init(argv[1], &g_profile);
     if (error) {
         print_error("Unable to process profile.");
         return error;
     }
 
-    error = daemon_init(profile);
+    error = daemon_init(g_profile);
     if (error) {
         print_error("Unable to initialize daemon.");
         return error;

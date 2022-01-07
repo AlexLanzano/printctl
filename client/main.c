@@ -8,7 +8,7 @@
 
 #define INPUT_LENGTH 256
 #define COMMAND_STRING_MAX 32
-#define COMMAND_COUNT 7
+#define COMMAND_COUNT 8
 
 typedef enum command {
     COMMAND_INVALID,
@@ -19,11 +19,12 @@ typedef enum command {
     COMMAND_DISABLE,
     COMMAND_PRINT,
     COMMAND_STATUS,
+    COMMAND_RECONNECT,
 } command_t;
 
 static const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"--help"},
                                                                   {"start"}, {"stop"}, {"enable"}, {"disable"},
-                                                                  {"print"}, {"status"}};
+                                                                  {"print"}, {"status"}, {"reconnect"}};
 
 static void print_help()
 {
@@ -35,7 +36,8 @@ static void print_help()
            "  enable [PROFILE] - enable daemon to start on boot\n"
            "  disable [PROFILE] - disable daemon from running on boot\n"
            "  print [PROFILE] [FILE] - Tell daemon to print a file\n"
-           "  status [PROFILE] - Get status of the daemon\n");
+           "  status [PROFILE] - Get status of the daemon\n"
+           "  reconnect [PROFILE] - Tell daemon to reconnect to the printer\n");
 }
 
 static command_t parse_command(const char *command)
@@ -152,6 +154,37 @@ static error_t process_status_command(int32_t argc, char **argv)
     return SUCCESS;
 }
 
+static error_t process_reconnect_command(int32_t argc, char **argv)
+{
+    if (argc < 3) {
+        print_help();
+        return EINVAL;
+    }
+
+    error_t error;
+    char *profile = argv[2];
+
+    error = client_connect(profile);
+    if (error) {
+        print_error("Client failed to connect to daemon.");
+        return error;
+    }
+
+    error = client_reconnect_printer();
+    if (error) {
+        print_error("Client failed to send reconnect command to daemon.");
+        return error;
+    }
+
+    error = client_disconnect();
+    if (error) {
+        print_error("Client failed to disconnect from daemon.");
+        return error;
+    }
+
+    return SUCCESS;
+}
+
 static error_t process_input(int32_t argc, char **argv)
 {
     error_t error;
@@ -189,6 +222,10 @@ static error_t process_input(int32_t argc, char **argv)
 
     case COMMAND_STATUS:
         error = process_status_command(argc, argv);
+        break;
+
+    case COMMAND_RECONNECT:
+        error = process_reconnect_command(argc, argv);
         break;
     }
 
