@@ -55,3 +55,16 @@ error_t systemctl_disable(const char *profile)
     execl("/usr/bin/systemctl", "systemctl", "start", service, NULL);
     return SUCCESS;
 }
+
+error_t systemctl_status(const char *profile)
+{
+    if (!profile) {
+        return EINVAL;
+    }
+
+    char service[1024] = {0};
+    snprintf(service, 1024, "printctl@%s", profile);
+
+    execl("/usr/bin/systemctl", "systemctl", "status", service, NULL);
+    return SUCCESS;
+}

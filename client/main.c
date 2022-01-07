@@ -8,7 +8,7 @@
 
 #define INPUT_LENGTH 256
 #define COMMAND_STRING_MAX 32
-#define COMMAND_COUNT 6
+#define COMMAND_COUNT 7
 
 typedef enum command {
     COMMAND_INVALID,
@@ -18,11 +18,12 @@ typedef enum command {
     COMMAND_ENABLE,
     COMMAND_DISABLE,
     COMMAND_PRINT,
+    COMMAND_STATUS,
 } command_t;
 
 static const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"--help"},
                                                                   {"start"}, {"stop"}, {"enable"}, {"disable"},
-                                                                  {"print"}};
+                                                                  {"print"}, {"status"}};
 
 static void print_help()
 {
@@ -33,7 +34,8 @@ static void print_help()
            "  stop [PROFILE] - stop daemon\n"
            "  enable [PROFILE] - enable daemon to start on boot\n"
            "  disable [PROFILE] - disable daemon from running on boot\n"
-           "  print [PROFILE] [FILE] - Tell daemon to print a file\n");
+           "  print [PROFILE] [FILE] - Tell daemon to print a file\n"
+           "  status [PROFILE] - Get status of the daemon\n");
 }
 
 static command_t parse_command(const char *command)
@@ -136,6 +138,20 @@ static error_t process_print_command(int32_t argc, char **argv)
     return SUCCESS;
 }
 
+static error_t process_status_command(int32_t argc, char **argv)
+{
+    if (argc < 3) {
+        print_error("Please provide a profile");
+        print_help();
+        return EINVAL;
+    }
+
+    char *profile = argv[2];
+    systemctl_status(profile);
+
+    return SUCCESS;
+}
+
 static error_t process_input(int32_t argc, char **argv)
 {
     error_t error;
@@ -169,6 +185,10 @@ static error_t process_input(int32_t argc, char **argv)
 
     case COMMAND_PRINT:
         error = process_print_command(argc, argv);
+        break;
+
+    case COMMAND_STATUS:
+        error = process_status_command(argc, argv);
         break;
     }
 
