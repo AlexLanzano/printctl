@@ -21,16 +21,16 @@ printer. In this case, the ~ttyACM0~ serial device is connected to the
 serial device with a baud rate of 115200
 
 ** printctl commands
-~printctrl start [NAME OF PROFILE]~ - start the daemon for the specific profile
+~printctrl start [PROFILE]~ - start the daemon for the specific profile
 
-~printctrl stop [NAME OF PROFILE]~ - stop the daemon for the specific profile
+~printctrl stop [PROFILE]~ - stop the daemon for the specific profile
 
-~printctrl enable [NAME OF PROFILE]~ - enable the daemon to start on boot
+~printctrl restart [PROFILE]~ - restart the daemon
 
-~printctrl disable [NAME OF PROFILE]~ - disable the daemon to start on boot
+~printctrl enable [PROFILE]~ - enable the daemon to start on boot
 
-~printctrl restart [NAME OF PROFILE]~ - restart the daemon
+~printctrl disable [PROFILE]~ - disable the daemon to start on boot
 
-~printctrl print [NAME OF PROFILE] [FILEPATH]~ - start a print
+~printctrl print [PROFILE] [FILEPATH]~ - start a print
 
-~printctrl reconnect [NAME OF PROFILE] [FILEPATH]~ - tell daemon to reconnect to the printer
+~printctrl reconnect [PROFILE]~ - tell daemon to reconnect to the printer
