@@ -8,13 +8,14 @@
 
 #define INPUT_LENGTH 256
 #define COMMAND_STRING_MAX 32
-#define COMMAND_COUNT 8
+#define COMMAND_COUNT 9
 
 typedef enum command {
     COMMAND_INVALID,
     COMMAND_HELP,
     COMMAND_START,
     COMMAND_STOP,
+    COMMAND_RESTART,
     COMMAND_ENABLE,
     COMMAND_DISABLE,
     COMMAND_PRINT,
@@ -23,7 +24,8 @@ typedef enum command {
 } command_t;
 
 static const char g_command[COMMAND_COUNT][COMMAND_STRING_MAX] = {{"--help"},
-                                                                  {"start"}, {"stop"}, {"enable"}, {"disable"},
+                                                                  {"start"}, {"stop"}, {"restart"},
+                                                                  {"enable"}, {"disable"},
                                                                   {"print"}, {"status"}, {"reconnect"}};
 
 static void print_help()
@@ -33,6 +35,7 @@ static void print_help()
            "Commands:\n"
            "  start [PROFILE] - start daemon\n"
            "  stop [PROFILE] - stop daemon\n"
+           "  restart [PROFILE] - restart the daemon"
            "  enable [PROFILE] - enable daemon to start on boot\n"
            "  disable [PROFILE] - disable daemon from running on boot\n"
            "  print [PROFILE] [FILE] - Tell daemon to print a file\n"
@@ -76,6 +79,20 @@ static error_t process_stop_command(int32_t argc, char **argv)
 
     char *profile = argv[2];
     systemctl_stop(profile);
+
+    return SUCCESS;
+}
+
+static error_t process_restart_command(int32_t argc, char **argv)
+{
+    if (argc < 3) {
+        print_error("Please provide a profile");
+        print_help();
+        return EINVAL;
+    }
+
+    char *profile = argv[2];
+    systemctl_restart(profile);
 
     return SUCCESS;
 }
@@ -206,6 +223,10 @@ static error_t process_input(int32_t argc, char **argv)
 
     case COMMAND_STOP:
         error = process_stop_command(argc, argv);
+        break;
+
+    case COMMAND_RESTART:
+        error = process_restart_command(argc, argv);
         break;
 
     case COMMAND_ENABLE:

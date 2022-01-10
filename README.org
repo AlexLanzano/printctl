@@ -29,4 +29,8 @@ serial device with a baud rate of 115200
 
 ~printctrl disable [NAME OF PROFILE]~ - disable the daemon to start on boot
 
+~printctrl restart [NAME OF PROFILE]~ - restart the daemon
+
 ~printctrl print [NAME OF PROFILE] [FILEPATH]~ - start a print
+
+~printctrl reconnect [NAME OF PROFILE] [FILEPATH]~ - tell daemon to reconnect to the printer
